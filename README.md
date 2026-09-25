@@ -46,8 +46,6 @@ The app keeps a **canonical parts catalog** with normalized specs, and ingestion
 
 ## Getting Started
 
-> Setup instructions will be finalized as the project is scaffolded.
-
 ### Prerequisites
 
 - Docker and Docker Compose
@@ -58,7 +56,7 @@ The app keeps a **canonical parts catalog** with normalized specs, and ingestion
 
 ```bash
 git clone <repo-url>
-cd homelab-parts-finder
+cd Homelab-Designer
 
 # Configure environment variables
 cp .env.example .env
@@ -66,37 +64,67 @@ cp .env.example .env
 # Start Postgres and Redis
 docker compose up -d
 
-# Backend
+# One virtualenv for backend + worker (the worker imports the backend's models)
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+
+# Backend (http://localhost:8000, docs at /docs)
 cd backend
 pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload
 
-# Frontend (in a new terminal)
+# Worker (in a new terminal, venv activated)
+cd worker
+pip install -r requirements.txt
+arq worker.main.WorkerSettings
+
+# Frontend (in a new terminal; http://localhost:5173, proxies /api to the backend)
 cd frontend
 npm install
 npm run dev
 ```
 
-### Running tests
+### Running tests and checks
+
+```bash
+cd backend && pytest && ruff check . && mypy app
+cd worker && pytest && ruff check . && mypy worker
+cd frontend && npm run lint && npm run build
+```
+
+### Database migrations
+
+Every schema change goes through Alembic. Add models under `backend/app/models/`, import them in `app/models/__init__.py`, then:
 
 ```bash
 cd backend
-pytest
+alembic revision --autogenerate -m "describe change"
+alembic upgrade head
 ```
 
 ## Project Structure
 
 ```
-backend/    FastAPI app, models, migrations
-worker/     Ingestion jobs and listing processing
-frontend/   React + TypeScript client
+backend/
+  app/
+    api/        Routers (mounted under /api)
+    core/       Settings (env / .env)
+    db/         SQLAlchemy base and session
+    models/     ORM models
+  alembic/      Migrations
+  tests/
+worker/
+  worker/       arq jobs for ingestion and listing processing
+  tests/
+frontend/       React + TypeScript client (Vite)
+docker-compose.yml   Local Postgres + Redis
 ```
 
 ## Roadmap
 
 **MVP**
-- [ ] Repo scaffold and local Docker setup
+- [x] Repo scaffold and local Docker setup
 - [ ] Authentication
 - [ ] Parts catalog schema with seed data (prebuilts, CPUs, RAM)
 - [ ] eBay ingestion and price snapshots
