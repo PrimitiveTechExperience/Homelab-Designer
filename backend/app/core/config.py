@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # https://developer.bestbuy.com/.
     bestbuy_api_key: str = ""
 
+    # Scrapers (worker): an honest, contactable user agent and a per-request delay.
+    scraper_user_agent: str = "HomelabPartsFinder/0.1 (+set SCRAPER_USER_AGENT with a contact)"
+    scrape_delay_seconds: float = 3.0
+
     # Where verification links point (the frontend route that calls /api/auth/verify-email).
     frontend_url: str = "http://localhost:5173"
 

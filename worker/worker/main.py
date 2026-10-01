@@ -16,6 +16,9 @@ from app.db.session import SessionLocal
 from worker.ingest import store_listings
 from worker.retailers.base import Retailer
 from worker.retailers.bestbuy import BestBuy
+from worker.retailers.canadacomputers import CanadaComputers
+from worker.retailers.newegg import Newegg
+from worker.retailers.scrape import PoliteFetcher
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,16 @@ async def ingest_retailers(ctx: dict[str, Any]) -> dict[str, int]:
             retailers.append(BestBuy(settings.bestbuy_api_key, client, cache=ctx.get("redis")))
         else:
             logger.info("BESTBUY_API_KEY not set; skipping Best Buy")
+
+        # Scraped sites: no API exists. Sites that block bots (Memory Express, Best Buy CA) are
+        # intentionally not included; we don't try to get around bot challenges.
+        fetcher = PoliteFetcher(
+            client,
+            settings.scraper_user_agent,
+            settings.scrape_delay_seconds,
+            cache=ctx.get("redis"),
+        )
+        retailers += [CanadaComputers(fetcher), Newegg(fetcher)]
 
         for retailer in retailers:
             try:
