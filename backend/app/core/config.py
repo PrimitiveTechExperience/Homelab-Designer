@@ -12,6 +12,24 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
     secret_key: str = "change-me"
+    access_token_expire_minutes: int = 60
+    verification_token_expire_hours: int = 24
+
+    # Retailer ingestion (worker). Best Buy's official Products API; get a key at
+    # https://developer.bestbuy.com/.
+    bestbuy_api_key: str = ""
+
+    # Where verification links point (the frontend route that calls /api/auth/verify-email).
+    frontend_url: str = "http://localhost:5173"
+
+    # "console" logs emails instead of sending them (local dev); "smtp" sends for real.
+    email_backend: str = "console"
+    smtp_host: str = "localhost"
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_use_tls: bool = True
+    email_from: str = "Homelab Parts Finder <no-reply@localhost>"
 
     @field_validator("cors_origins", mode="before")
     @classmethod
